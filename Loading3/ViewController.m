@@ -10,6 +10,9 @@
 #import "Circlelayer.h"
 
 
+static NSString * const kName = @"name";
+static NSString * const kProgress = @"progress";
+static NSString * const kMoveLayerGroup = @"moveLayerGroup";
 
 @interface ViewController ()
 {
@@ -44,16 +47,19 @@
     
     basic.delegate = self;
     basic.duration = 5;
-    
+    [basic setValue:kProgress forKey:kName];
     [_layer addAnimation:basic forKey:nil];
     
 }
 
 - (void)animationDidStop:(CAAnimation *)anim finished:(BOOL)flag
 {
-    if (flag) {
+    if ([[anim valueForKey:kName] isEqualToString:kProgress]) {
         //执行红点抛物线
         [self doHandlePao];
+    }else if ([[anim valueForKey:kName] isEqualToString:kMoveLayerGroup])
+    {
+        
     }
 }
 - (void)doHandlePao
@@ -98,23 +104,24 @@
     _moveLayer = moveLayer;
     [self addAnimationSSFrom:SSFrom to:SSTo SEFrom:SEFrom to:SETo];
 }
-- (void)addAnimationSSFrom:(CGFloat)from to:(CGFloat)to SEFrom:(CGFloat)sefrom to:(CGFloat)seto
+- (void)addAnimationSSFrom:(CGFloat)ssfrom to:(CGFloat)ssto SEFrom:(CGFloat)sefrom to:(CGFloat)seto
 {
     CABasicAnimation * startAnimation = [CABasicAnimation animationWithKeyPath:@"strokeStart"];
-    startAnimation.fromValue = @(0.0);
-    startAnimation.toValue = @(0.9);
+    startAnimation.fromValue = @(ssfrom);
+    startAnimation.toValue = @(ssto);
     
     
     CABasicAnimation * endAnimation = [CABasicAnimation animationWithKeyPath:@"strokeEnd"];
-    endAnimation.fromValue = @(0.1);
-    endAnimation.toValue = @(1.0);
+    endAnimation.fromValue = @(sefrom);
+    endAnimation.toValue = @(seto);
     
     CAAnimationGroup * group = [CAAnimationGroup animation];
     group.animations = @[startAnimation,endAnimation];
     group.duration = 3;
-    group.repeatCount = MAXFLOAT;
+    group.repeatCount = 1;
     
     group.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseOut];
+    [group setValue:kMoveLayerGroup forKey:kName];
     [_moveLayer addAnimation:group forKey:nil];
     
 }

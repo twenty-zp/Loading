@@ -9,6 +9,11 @@
 			<key>orderHint</key>
 			<integer>1</integer>
 		</dict>
+		<key>Loading3.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>2</integer>
+		</dict>
 		<key>动画.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
@@ -23,6 +28,11 @@
 			<true/>
 		</dict>
 		<key>F4A788DE1C3A3E4100E59C81</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>F4A788FC1C3A58BF00E59C81</key>
 		<dict>
 			<key>primary</key>
 			<true/>
