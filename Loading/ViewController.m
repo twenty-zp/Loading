@@ -24,28 +24,64 @@
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
     
-    Circlelayer * layer = [Circlelayer layer];
-    layer.progress = 0;
-    layer.position = CGPointMake(CGRectGetMidX(self.view.bounds), CGRectGetMidY(self.view.bounds));
-
-    layer.masksToBounds = YES;
-
-    layer.bounds = CGRectMake(100, 100, 80, 80);
-    [self.view.layer addSublayer:layer];
-    _layer = layer;
     
+    //方法1：
+    CAShapeLayer * circle = [CAShapeLayer layer];
+    circle.bounds = self.view.bounds;
+    circle.position = self.view.center;
     
-    CABasicAnimation * basic = [CABasicAnimation animationWithKeyPath:@"progress"];
-    basic.fromValue = @0.0;
-    basic.toValue = [NSNumber numberWithFloat:1.0];
-    basic.fillMode =  kCAFillModeForwards;
-    basic.removedOnCompletion = NO;
-    basic.repeatCount = MAXFLOAT;
+    UIBezierPath  * circlePath = [UIBezierPath bezierPathWithArcCenter:CGPointMake(CGRectGetMidX(self.view.bounds), CGRectGetMidY(self.view.bounds)) radius:30 startAngle:0 endAngle:2*M_PI clockwise:YES];
+    
+    circle.path = circlePath.CGPath;
+    circle.strokeColor = [UIColor blueColor].CGColor;
+    circle.fillColor = nil;
+    [self.view.layer addSublayer:circle];
+    
+    circle.strokeStart = 0.26;
+    circle.strokeEnd = 0.5;
+    //通过圆的strokeStart 改变来进行改变
+    CABasicAnimation * strokeStartAnimation = [CABasicAnimation animationWithKeyPath:@"strokeStart"];
+    strokeStartAnimation.fromValue = @(0.26);
+    strokeStartAnimation.toValue = @(0);
+    //通过圆的strokeEnd 改变来进行改变
+    CABasicAnimation * strokeEndAnimation = [CABasicAnimation animationWithKeyPath:@"strokeEnd"];
+    strokeEndAnimation.fromValue = @0.5;
+    strokeEndAnimation.toValue =@(1.0);
+    //通过圆的transform.rotation.z 改变来进行改变
+    CABasicAnimation * rotationAnimation = [CABasicAnimation animationWithKeyPath:@"transform.rotation.z"];
+    rotationAnimation.fromValue = @(0);
+    rotationAnimation.toValue = @(-5*M_PI);
+    
+    CAAnimationGroup * group = [CAAnimationGroup animation];
+    group.duration = 5;
+    group.removedOnCompletion = NO;
+    group.fillMode = kCAFillModeForwards;
+    group.animations = @[strokeStartAnimation,strokeEndAnimation,rotationAnimation];
+    [circle addAnimation:group forKey:nil];
 
-
-    basic.duration = 5;
-   
-    [_layer addAnimation:basic forKey:nil];
+//    方法2:
+//    Circlelayer * layer = [Circlelayer layer];
+//    layer.progress = 0;
+//    layer.position = CGPointMake(CGRectGetMidX(self.view.bounds), CGRectGetMidY(self.view.bounds));
+//
+//    layer.masksToBounds = YES;
+//
+//    layer.bounds = CGRectMake(100, 100, 80, 80);
+//    [self.view.layer addSublayer:layer];
+//    _layer = layer;
+//    
+//    
+//    CABasicAnimation * basic = [CABasicAnimation animationWithKeyPath:@"progress"];
+//    basic.fromValue = @0.0;
+//    basic.toValue = [NSNumber numberWithFloat:1.0];
+//    basic.fillMode =  kCAFillModeForwards;
+//    basic.removedOnCompletion = NO;
+//    basic.repeatCount = MAXFLOAT;
+//
+//
+//    basic.duration = 5;
+//   
+//    [_layer addAnimation:basic forKey:nil];
     
 }
 

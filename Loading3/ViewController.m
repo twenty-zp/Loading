@@ -13,11 +13,16 @@
 static NSString * const kName = @"name";
 static NSString * const kProgress = @"progress";
 static NSString * const kMoveLayerGroup = @"moveLayerGroup";
-
+static NSString * const kPositionY = @"positiony";
 @interface ViewController ()
 {
     Circlelayer * _layer;
     CAShapeLayer * _moveLayer;
+    CAShapeLayer * _lineLayer;
+    
+    CGFloat finalPosition;
+    
+    CGFloat kRadius;
 }
 @end
 
@@ -59,7 +64,13 @@ static NSString * const kMoveLayerGroup = @"moveLayerGroup";
         [self doHandlePao];
     }else if ([[anim valueForKey:kName] isEqualToString:kMoveLayerGroup])
     {
-        
+        //执行向下滑动
+        [self doHandleTranslate];
+    }
+        else if ([[anim valueForKey:kName] isEqualToString:kPositionY])
+    {
+        //执行线条变粗
+        [self dohandleStep3];
     }
 }
 - (void)doHandlePao
@@ -78,7 +89,7 @@ static NSString * const kMoveLayerGroup = @"moveLayerGroup";
     
     //圆心
     CGPoint center = CGPointMake(CGRectGetMidX(self.view.layer.bounds), CGRectGetMidY(self.view.layer.bounds));
-    CGFloat kRadius = CGRectGetWidth(_layer.bounds) * 0.5 - 5 * 2 ;
+     kRadius = CGRectGetWidth(_layer.bounds) * 0.5 - 5 * 2 ;
     
     //圆心
     UIBezierPath * path  = [UIBezierPath bezierPath] ;
@@ -117,28 +128,133 @@ static NSString * const kMoveLayerGroup = @"moveLayerGroup";
     
     CAAnimationGroup * group = [CAAnimationGroup animation];
     group.animations = @[startAnimation,endAnimation];
-    group.duration = 3;
+    group.duration = 1;
     group.repeatCount = 1;
-    
-    group.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionEaseOut];
+    group.delegate = self;
+    group.timingFunction = [CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionLinear];
     [group setValue:kMoveLayerGroup forKey:kName];
     [_moveLayer addAnimation:group forKey:nil];
     
 }
+
+
 - (IBAction)sender:(id)sender {
-    
     _layer.progress += 0.01;
     
 }
-- (void)handleDisplayLink:(CADisplayLink *)lik
+- (void)doHandleTranslate
 {
+    [_moveLayer removeFromSuperlayer];
+   
+    CAShapeLayer * lineLayer = [CAShapeLayer layer];
+    lineLayer.bounds = CGRectMake(0, 0, 2, 15);
+
+    CGFloat y = CGRectGetMidY(self.view.bounds) - 2* kRadius + (lineLayer.bounds.size.height)*0.5;
+    lineLayer.position = CGPointMake(CGRectGetMidX(self.view.bounds), y);
+    lineLayer.backgroundColor= [UIColor blueColor].CGColor;
+    lineLayer.lineWidth = 2;
+    lineLayer.contentsScale = [UIScreen mainScreen].scale;
+    [self.view.layer addSublayer:lineLayer];
+    _lineLayer= lineLayer;
     
-    if (_layer.progress >= 1.0) {
-        return [lik invalidate];
-    }
+    finalPosition = CGRectGetMidY(self.view.bounds) -  kRadius -5;
     
-    _layer.progress += 0.001;
+    CABasicAnimation * yAnimation = [CABasicAnimation animationWithKeyPath:@"position.y"];
+    yAnimation.fromValue = @(y);
+    yAnimation.toValue = @(finalPosition);
+    yAnimation.removedOnCompletion = NO;
+    yAnimation.delegate = self;
+    yAnimation.duration = 3;
+    [yAnimation setValue:kPositionY forKey:kName];
+    yAnimation.fillMode = kCAFillModeForwards;
+    [lineLayer addAnimation:yAnimation forKey:nil];
     
+}
+
+- (void)dohandleStep3
+{
+    //逐渐移出细线
+    [self removeSmallLine];
+    //逐渐添加粗线
+    [self addBlodLine];
+    //圆变形
+    [self transformCircle];
+}
+- (void)removeSmallLine
+{
+    [_lineLayer removeFromSuperlayer];
+    
+    CGPoint beginPoint = _lineLayer.position;
+    beginPoint.y = finalPosition;
+    _lineLayer.position = beginPoint;
+    
+    //划线的点
+    CGPoint startPoint = CGPointMake(_lineLayer.position.x, _lineLayer.position.y-_lineLayer.bounds.size.height*0.5);
+
+    
+    CAShapeLayer * smallLine = [CAShapeLayer layer];
+     smallLine.frame = self.view.layer.bounds;
+  
+    
+    UIBezierPath * path = [UIBezierPath bezierPath];
+    [path moveToPoint:startPoint];
+    [path addLineToPoint:CGPointMake(_lineLayer.position.x, startPoint.y + _lineLayer.bounds.size.height+0.2*2*kRadius)];
+    smallLine.path = path.CGPath;
+    smallLine.strokeColor = _lineLayer.backgroundColor;
+    smallLine.fillColor = nil;
+    smallLine.contentsScale = [UIScreen mainScreen].scale;
+    smallLine.lineWidth = 2;
+    
+    //刚开始的起始点为0
+    CGFloat SSFrom = 0;
+    CGFloat SSTo = 1.0;
+    
+    CGFloat SEFrom = _lineLayer.bounds.size.height / ( _lineLayer.bounds.size.height + 0.2*2*kRadius);
+    CGFloat SETo = 1.0;
+    
+    [self.view.layer addSublayer:smallLine];
+    
+    CABasicAnimation *smallLineAnimation = [CABasicAnimation animationWithKeyPath:@"strokeStart"];
+    smallLineAnimation.fromValue = @(SSFrom);
+    smallLineAnimation.toValue =@(SSTo);
+    
+    CABasicAnimation *smallLineEnd = [CABasicAnimation animationWithKeyPath:@"strokeEnd"];
+    smallLineEnd.fromValue = @(SEFrom);
+    smallLineEnd.toValue =@(SETo);
+    
+    CAAnimationGroup * smallLineGroup = [CAAnimationGroup animation];
+    smallLineGroup.duration = 5;
+    smallLineGroup.fillMode = kCAFillModeForwards;
+    smallLineGroup.removedOnCompletion = NO;
+    smallLineGroup.animations = @[smallLineAnimation,smallLineEnd];
+    [smallLine addAnimation:smallLineGroup forKey:nil];
+    
+}
+- (void)addBlodLine
+{
+  
+}
+- (void)transformCircle
+{
+    CGRect frame = _layer.frame;
+    _layer.anchorPoint = CGPointMake(0.5, 1);
+    _layer.frame = frame;
+//    _layer.transform = CATransform3DMakeScale(1.1, 0.8, 1);
+    
+    CABasicAnimation * scaleY = [CABasicAnimation animation];
+    scaleY.keyPath = @"transform.scale.y";
+    scaleY.fromValue = @(1.0);
+    scaleY.toValue = @(0.8);
+    
+    CABasicAnimation * scaleX = [CABasicAnimation animation];
+    scaleX.fromValue = @(1.0);
+    scaleX.toValue = @(1.1);
+    scaleX.keyPath = @"transform.scale.x";
+    
+    CAAnimationGroup * xyGroup = [CAAnimationGroup animation];
+    xyGroup.animations = @[scaleX,scaleY];
+    xyGroup.duration = 5;
+    [_layer addAnimation:xyGroup forKey:nil];
     
 }
 - (void)didReceiveMemoryWarning {
